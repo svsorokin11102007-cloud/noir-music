@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101014"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="NOIR MUSIC">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
+<title>NOIR MUSIC</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101014;color:#fff;font:16px -apple-system,BlinkMacSystemFont,Arial,sans-serif;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+main{max-width:650px;margin:auto;padding:20px 0 35px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.muted{color:#96939e}.brand{font-size:25px;font-weight:900;letter-spacing:2px}.brand span{color:#b9a4ff}.mark{background:#292532;color:#c7b3ff;border-radius:50%;padding:12px;font-size:22px}
+.hero{background:linear-gradient(125deg,#34294c,#191922 75%);padding:19px;border-radius:20px}.eyebrow{font-size:11px;letter-spacing:2px;color:#c9b9f7}.hero h1{font-size:26px;margin:12px 0 7px}.search{display:flex;gap:8px;margin-top:17px}.search input{min-width:0;flex:1;background:#22222a;border:1px solid #393641;border-radius:12px;color:white;padding:14px;font-size:16px}.search button,.primary{background:#b9a4ff;color:#17131f;border:0;border-radius:12px;padding:0 17px;font-weight:700}
+.tabs{display:flex;gap:8px;margin:17px 0}.tabs button,.secondary{background:#292832;color:#c7b3ff;border:0;border-radius:10px;padding:10px 13px}.tabs button.active{background:#39304e}
+h2{font-size:19px}.song{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px}.song:active{background:#292832}.cover{width:50px;height:50px;border-radius:9px;object-fit:cover;background:#302b3a;flex-shrink:0}.songinfo{flex:1;min-width:0}.songinfo b,.songinfo small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.songinfo small{color:#96939e;margin-top:4px}.song button{border:0;background:transparent;color:#c6b4ff;font-size:20px;padding:6px}
+.player{margin-top:20px;background:#1c1c23;border:1px solid #303039;border-radius:16px;padding:15px}.now{display:flex;align-items:center;gap:12px}.now .cover{width:60px;height:60px}.controls{display:flex;justify-content:center;align-items:center;gap:26px;margin:13px}.controls button{background:none;border:0;color:white;font-size:22px}.controls .play{background:#b9a4ff;color:#17131f;border-radius:50%;width:49px;height:49px}.seek{width:100%;accent-color:#b9a4ff}.times{display:flex;justify-content:space-between;color:#96939e;font-size:11px}.status{font-size:12px;color:#aaa;margin-top:10px}.empty{padding:26px 12px;text-align:center;color:#96939e;background:#1c1c23;border-radius:14px}.foot{text-align:center;color:#777;font-size:11px;margin-top:22px}
+</style></head>
+<body><main>
+<header class="top"><div><div class="muted" style="font-size:11px;letter-spacing:2px">YOUR PERSONAL SOUND</div><div class="brand">NOIR <span>MUSIC.</span></div></div><div class="mark">♫</div></header>
+<section class="hero"><div class="eyebrow">MUSIC FOR YOUR MOMENT</div><h1>Найди свой звук.</h1><div class="muted">Ищи любимые песни и слушай доступные превью.</div><div class="search"><input id="q" placeholder="Песня или исполнитель..." autocomplete="off"><button id="find">Найти</button></div><div id="status" class="status">Поиск по каталогу iTunes / Apple Music</div></section>
+<nav class="tabs"><button class="active" data-tab="search">⌕ Поиск</button><button data-tab="favorites">♡ Избранное</button><button data-tab="history">◷ История</button></nav>
+<section><h2 id="heading">Результаты поиска</h2><div id="list"><div class="empty">Введи название песни или исполнителя выше.</div></div></section>
+<section class="player"><div class="eyebrow" style="margin-bottom:12px">NOW PLAYING</div><div class="now"><img id="pcover" class="cover" src="icon-192.png"><div class="songinfo"><b id="ptitle">Пока ничего не играет</b><small id="partist">Выбери трек</small></div><button id="pfav" style="border:0;background:none;color:#c6b4ff;font-size:22px">♡</button></div><div class="times"><span id="elapsed">0:00</span><span id="duration">0:30</span></div><input id="seek" class="seek" type="range" min="0" max="30" value="0"><div class="controls"><button id="prev">⏮</button><button id="toggle" class="play">▶</button><button id="next">⏭</button></div><div class="status">Доступные музыкальные фрагменты</div></section>
+<div class="foot">NOIR MUSIC · FIND YOUR SOUND</div>
+<audio id="audio" preload="none"></audio>
+</main>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),audio=$('audio');let results=[],current=null,tab='search',favs=[],hist=[];
+try{favs=JSON.parse(localStorage.getItem('noir-favs')||'[]');hist=JSON.parse(localStorage.getItem('noir-history')||'[]')}catch(e){}
+const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const save=()=>{localStorage.setItem('noir-favs',JSON.stringify(favs));localStorage.setItem('noir-history',JSON.stringify(hist))};
+function active(){return tab==='favorites'?favs:tab==='history'?hist:results}
+function draw(){let arr=active();$('heading').textContent=tab==='favorites'?'Избранное':tab==='history'?'Недавно прослушано':'Результаты поиска';$('list').innerHTML=arr.length?arr.map((s,i)=>`<div class="song"><img class="cover" src="${esc(s.artworkUrl100||'icon-192.png')}"><div class="songinfo" data-play="${i}"><b>${esc(s.trackName)}</b><small>${esc(s.artistName)}</small></div><button data-fav="${i}">${favs.some(x=>x.trackId===s.trackId)?'♥':'♡'}</button><button data-play="${i}">▶</button></div>`).join(''):'<div class="empty">Пока пусто. Найди музыку в поиске.</div>'}
+async function search(){let q=$('q').value.trim();if(!q)return;tab='search';tabs();$('status').textContent='Ищем музыку...';$('list').innerHTML='<div class="empty">Загружаем...</div>';try{let r=await fetch('https://itunes.apple.com/search?term='+encodeURIComponent(q)+'&entity=song&limit=30&media=music');if(!r.ok)throw Error();let d=await r.json();results=d.results.filter(x=>x.previewUrl);$('status').textContent='Найдено треков: '+results.length;draw()}catch(e){$('status').textContent='Поиск не удался. Проверь интернет и попробуй снова.';$('list').innerHTML='<div class="empty">Не удалось загрузить результаты.</div>'}}
+function tabs(){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));draw()}
+function fmt(t){return Number.isFinite(t)?Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'):'0:00'}
+function player(){if(!current)return;$('ptitle').textContent=current.trackName;$('partist').textContent=current.artistName;$('pcover').src=current.artworkUrl100||'icon-192.png';$('pfav').textContent=favs.some(x=>x.trackId===current.trackId)?'♥':'♡'}
+function play(s){if(!s)return;if(current?.trackId===s.trackId&&audio.src){audio.paused?audio.play().catch(()=>{}):audio.pause();return}current=s;audio.src=s.previewUrl;audio.play().catch(()=>$('status').textContent='Не удалось воспроизвести этот фрагмент.');hist=[s,...hist.filter(x=>x.trackId!==s.trackId)].slice(0,30);save();player();if(tab==='history')draw()}
+function fav(s){favs.some(x=>x.trackId===s.trackId)?favs=favs.filter(x=>x.trackId!==s.trackId):favs.unshift(s);save();player();draw()}
+$('find').onclick=search;$('q').onkeydown=e=>{if(e.key==='Enter')search()};document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;tabs()});
+$('list').onclick=e=>{let p=e.target.closest('[data-play]'),f=e.target.closest('[data-fav]');if(p)play(active()[+p.dataset.play]);if(f)fav(active()[+f.dataset.fav])};
+$('toggle').onclick=()=>{if(!current)return;audio.paused?audio.play().catch(()=>{}):audio.pause()};
+audio.onplay=()=>{$('toggle').textContent='Ⅱ'};audio.onpause=()=>{$('toggle').textContent='▶'};
+audio.ontimeupdate=()=>{$('seek').value=audio.currentTime;$('elapsed').textContent=fmt(audio.currentTime)};
+audio.onloadedmetadata=()=>{$('seek').max=audio.duration||30;$('duration').textContent=fmt(audio.duration)};
+$('seek').oninput=()=>{if(audio.duration)audio.currentTime=+$('seek').value};
+$('pfav').onclick=()=>{if(current)fav(current)};
+function move(d){let a=active();if(!a.length)return;let i=a.findIndex(x=>x.trackId===current?.trackId);play(a[(i+d+a.length)%a.length])}
+$('next').onclick=()=>move(1);$('prev').onclick=()=>move(-1);
+})();
+</script></body></html>
+<script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));</script>
